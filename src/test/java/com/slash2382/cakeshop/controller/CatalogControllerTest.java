@@ -1,57 +1,63 @@
 package com.slash2382.cakeshop.controller;
 
-import com.gargoylesoftware.htmlunit.BrowserVersion;
+import static org.assertj.core.api.Assertions.assertThat;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
-import com.slash2382.cakeshop.service.ItemService;
-import org.apache.catalina.core.ApplicationContext;
-import org.junit.Assert;
+import com.slash2382.cakeshop.dto.Item;
+import com.slash2382.cakeshop.service.CatalogService;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.RequestBuilder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.htmlunit.MockMvcWebClientBuilder;
 
-import javax.servlet.ServletContext;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import java.math.BigDecimal;
+import java.util.Collections;
 
-@ExtendWith(SpringExtension.class)
-@WebMvcTest(controllers = MainController.class)
-@AutoConfigureMockMvc
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(controllers = CatalogController.class)
 class CatalogControllerTest {
 
+    private WebClient webClient;
+
     @Autowired
-    private MockMvc mockMvc;
+    MockMvc mockMvc;
 
     @MockBean
-    private ItemService itemService;
+    CatalogService catalogService;
+
+    @BeforeEach
+    void setup() {this.webClient = MockMvcWebClientBuilder.mockMvcSetup(mockMvc).build();}
 
     @Test
-    void testExample() throws Exception{
-        mockMvc.perform(MockMvcRequestBuilders.get("/"))
+    @DisplayName("index page returns home page")
+    void returnsHomePage() throws Exception{
+        mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("CakeShop Factory")));
+                .andExpect(content().string(Matchers.containsString("Cake Factory")));
     }
 
     @Test
-    public void homePage_Firefox() throws Exception {
-        try (final WebClient webClient = new WebClient(BrowserVersion.FIREFOX)) {
-            final HtmlPage page = webClient.getPage("http://localhost:8080/");
-            Assert.assertEquals("CakeShop Homepage", page.getTitleText());
-        }
+    @DisplayName("home page returns a list of items from database")
+    void returnListOfItemsFromDb() throws Exception{
+        final String expectedTitle = "Red Velvet";
+        mockItems(expectedTitle, BigDecimal.valueOf(3));
+
+        HtmlPage page = webClient.getPage("http://localhost/");
+
+        assertThat(page.querySelectorAll(".item-title")).anyMatch(domElement -> expectedTitle.equals(domElement.asText()));
+    }
+
+    private void mockItems(String title, BigDecimal price) {
+        when(catalogService.getItems()).thenReturn(Collections.singletonList(new Item(title, price)));
     }
 
 
