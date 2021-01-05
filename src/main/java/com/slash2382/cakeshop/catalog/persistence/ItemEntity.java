@@ -1,4 +1,4 @@
-package com.slash2382.cakeshop.domain;
+package com.slash2382.cakeshop.catalog.persistence;
 
 
 import lombok.Data;
@@ -13,28 +13,29 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "catalog")
-@Data
 public class ItemEntity {
 
     @Id
-    private String sku;
+    String sku;
 
     @NotBlank
-    private String title;
+    String title;
 
     @NotNull
-    private BigDecimal price;
+    BigDecimal price;
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ItemEntity that = (ItemEntity) o;
-        return Objects.equals(sku, that.sku);
+    public boolean equals(Object obj) {
+        if (obj instanceof ItemEntity) {
+            ItemEntity other = (ItemEntity) obj;
+            return Objects.equals(this.sku, other.sku);
+        }
+
+        return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sku);
+        return Objects.hashCode(this.sku);
     }
 }
